@@ -1,0 +1,1171 @@
+using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using Heroes;
+
+
+namespace Heroes
+{
+    abstract class Hero : IDisposable
+    {
+        public string Name { get; set; }
+        public int XP { get; set; }
+        public int Level { get; set; }
+        public int LevelCost { get; set; }
+        public int Strength { get; set; }
+        public int Agility { get; set; }
+        public int Vitality { get; set; }
+        public int Stamina { get; set; }
+        public int Intelligence { get; set; }
+        public int Endurance { get; set; }
+        public int Luck { get; set; }
+        private bool disposed = false;
+        public int Fortitude;
+        public bool Parry_state = false;
+        public int Slashy_state = 1;
+        public static int UserCount = 0;
+        private int Health;
+        private int Fear { get; set; } = 0;
+        private int Bleed { get; set; } = 0;
+        private int Poison { get; set; } = 0;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (!disposing)
+                {
+                        
+                }
+
+                disposed = true;
+            }
+        }
+        
+        
+        public static void IncreaseUserCount()
+        {
+            UserCount++;
+        }
+
+        public Hero()
+        {
+            UserCount++;
+            this.Name = "Untitled";
+        }
+
+        public Hero(string Name)
+        {
+            UserCount++;
+            this.Name = Name;
+        }
+        
+
+        ~Hero()
+        {
+            Dispose (false);
+        }
+
+        public Hero(String name, int str, int agi, int vit, int sta, int inj, int end, int lck)
+        {
+            UserCount++;
+            this.Name = name;
+            this.Strength = str;
+            this.Agility = agi;
+            this.Vitality = vit;
+            this.Stamina = sta;
+            this.Intelligence = inj;
+            this.Endurance = end;
+            this.Luck = lck;
+            setLevel();
+            setHealth();
+            setFortitude();
+            setLevelCost();
+        }
+
+        public void setLevel()
+        {
+            Level = Strength + Agility + Vitality + Stamina + Intelligence + Endurance + Luck;
+        }
+
+        public void setLevelCost()
+        {
+            this.LevelCost = (int) (0.0068 * Math.Pow(Level, 3) - 0.06 * Math.Pow(Level, 2) + 17.1 * Level + 639);
+        }
+
+        public void setFortitude()
+        {
+            Fortitude = (int) (Endurance * 2 + Vitality * 1.5);
+        }
+
+        public int getBleed()
+        {
+            return Bleed;
+        }
+
+        public void setBleed(int bleed)
+        {
+            Bleed = bleed;
+        }
+
+        public int getPoison()
+        {
+            return Poison;
+        }
+
+        public void setPoison(int poison)
+        {
+            Poison = poison;
+        }
+
+        public void setFear(int fear)
+        {
+            Fear += fear;
+        }
+
+        public int getFear()
+        {
+            return Fear;
+        }
+
+        public void setFortitude(int bonus)
+        {
+            Fortitude = (int) (Endurance * 2 + Vitality * 1.5) + bonus * 3;
+        }
+
+        public void setHealth()
+        {
+            this.Health = Vitality * 20;
+        }
+
+        public void setHealth(int atk)
+        {
+            Health -= atk;
+        }
+
+        public int getHealth()
+        {
+            return Health;
+        }
+
+        public void LevelUp()
+        {
+            Console.WriteLine("Please, increase one of these characteristics:");
+            Console.WriteLine("1. Strength");
+            Console.WriteLine("2. Agility");
+            Console.WriteLine("3. Vitality");
+            Console.WriteLine("4. Stamina");
+            Console.WriteLine("5. Intelligence");
+            Console.WriteLine("6. Endurance");
+            Console.WriteLine("7. Luck");
+            int a = Convert.ToInt32(Console.ReadLine());
+            switch (a)
+            {
+                case 1:
+                {
+                    Strength++;
+                    break;
+                }
+                case 2:
+                {
+                    Agility++;
+                    break;
+                }
+                case 3:
+                {
+                    Vitality++;
+                    break;
+                }
+                case 4:
+                {
+                    Stamina++;
+                    break;
+                }
+                case 5:
+                {
+                    Intelligence++;
+                    break;
+                }
+                case 6:
+                {
+                    Endurance++;
+                    break;
+                }
+                case 7:
+                {
+                    Luck++;
+                    break;
+                }
+            }
+
+            Level++;
+        }
+
+        public void PickUpItem()
+        {
+            Console.WriteLine("{0} moves his hands around, searching for random items...", Name);
+            Random rg = new Random();
+            int rgnumber = rg.Next(100);
+            rgnumber += Luck;
+            if (rgnumber < 10)
+            {
+                Console.WriteLine("You touch someone in the darkness!");
+                this.Encounter();
+                if (Health <= 0)
+                {
+                    Console.Clear();
+                    Console.WriteLine("You are dead.");
+                    Console.ReadKey();
+                }
+                else
+                {
+                    Console.WriteLine("Victory!");
+                    Console.WriteLine("You get 500 XP");
+                    XP += 500;
+                    if (XP >= LevelCost)
+                    {
+                        Console.WriteLine("Level Up");
+                        LevelUp();
+                        XP -= LevelCost;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("{0} has found the " + FoundItem(), Name);
+            }
+        }
+
+        public void PickUpItem(string item)
+        {
+            Console.WriteLine("{0} picks up the specific item: {1}", Name, item);
+
+        }
+
+        public virtual int BattleInterface()
+        {
+            Console.WriteLine("Options:");
+            Console.WriteLine("1. Attack: {0} attacks random bandit", Name);
+            Console.WriteLine("2. Defend : {0} defends himself this turn.", Name);
+            int a = Convert.ToInt32(Console.ReadLine());
+            return a;
+        }
+
+        public void Attack(Bandit bandit)
+        {
+            Random rnd = new Random();
+            int chance = rnd.Next(100) + Luck;
+            if (chance < 10)
+            {
+                Console.WriteLine("Critical miss!");
+                setHealth((int) (Strength * 1.5 + Agility * 0.5));
+            }
+            else
+            {
+                int atk_bonus = rnd.Next(100);
+                int atk = (int) (Strength * 1.5 + Agility * 0.5) + atk_bonus;
+                int def = bandit.Fortitude;
+                atk -= def;
+                if (atk - def < 0)
+                {
+                    atk = 0;
+                }
+                else
+                {
+                    bandit.setHealth(atk);
+                }
+
+                if (bandit.getHealth() > 0)
+                {
+                    Console.WriteLine("{0} deals {1} damage!", Name, atk);
+                }
+                else
+                {
+                    Console.WriteLine("{0} mutilates the bandit's corpse!", Name);
+                }
+
+                if (atk > 30)
+                {
+                    bandit.setFear(20);
+                }
+            }
+        }
+
+        public virtual void Turn(ref int ActionPoints, Bandit[] bandits, int count)
+        {
+            Console.Clear();
+            int opt = BattleInterface();
+            Random rnd = new Random();
+            if (ActionPoints > 2)
+            {
+                switch (opt)
+                {
+                    case 1:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} attacks a random bandit!", Name);
+                            int target = rnd.Next(count);
+                            Attack(bandits[target]);
+                            ActionPoints -= 5;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        if (ActionPoints - 3 >= 0)
+                        {
+                            Console.WriteLine("{0} defends himself!", Name);
+                            Defend();
+                            ActionPoints -= 3;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not enough action points");
+            }
+        }
+
+        public virtual void Defend()
+        {
+            Console.WriteLine("You are defending yourself");
+        }
+
+        public void Encounter()
+        {
+            Console.Clear();
+            Random rnd = new Random();
+            int count = rnd.Next(5);
+            if (count == 0)
+            {
+                count = 1;
+            }
+
+            Bandit[] bandits = new Bandit[count];
+            for (int i = 0; i < count; i++)
+            {
+                bandits[i] = new Bandit();
+            }
+
+            Console.WriteLine("{0} has encountered {1} bandits!", Name, count);
+            while ((Health > 0) && (count > 0))
+            {
+                int alive = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    if (bandits[i].Health > 0)
+                    {
+                        alive++;
+                    }
+                }
+
+                if (alive == 0)
+                {
+                    break;
+                }
+
+                int ActionPoints = Stamina;
+                int turn = rnd.Next(2);
+                if (turn == 1)
+                {
+                    Console.WriteLine("{0}'s turn.", Name);
+                    while (ActionPoints > 0)
+                    {
+                        Console.WriteLine("{0} HP: " + Health, Name);
+                        for (int i = 0; i < count; i++)
+                        {
+                            Console.WriteLine("Bandit №{0} HP: " + bandits[i].Health, i);
+                        }
+
+                        Turn(ref ActionPoints, bandits, count);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Bandits' turn");
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (bandits[i].Health <= 0)
+                        {
+                            Console.WriteLine("This bandit №{0} is dead or has escaped!", i);
+                            bandits = bandits.Where((val, idx) => idx != i).ToArray();
+                            count--;
+                        }
+                        else
+                        {
+                            bandits[i].BanditInterface(i, this);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void StrUp()
+        {
+            this.Strength++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public void AgiUp()
+        {
+            this.Agility++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public void VitUp()
+        {
+            this.Vitality++;
+            this.Level++;
+            setLevelCost();
+            setHealth();
+        }
+
+        public void StaUp()
+        {
+            this.Stamina++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public void IntUp()
+        {
+            this.Intelligence++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public void LuckUp()
+        {
+            this.Luck++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public void EndUp()
+        {
+            this.Endurance++;
+            this.Level++;
+            setLevelCost();
+        }
+
+        public virtual string FoundItem()
+        {
+            string found = " ";
+            Random gen = new Random();
+            int rand = gen.Next(100);
+            if (Luck < 3)
+            {
+                found = rand > 95 ? "pebble" : "nothing";
+            }
+            else
+            {
+                if (rand < 33)
+                {
+                    found = "pebble";
+                }
+                else if ((rand >= 33) && (rand < 66))
+                {
+                    found = "coin";
+                }
+                else if ((rand >= 66) && (rand < 95))
+                {
+                    found = "health potion";
+                }
+                else
+                {
+                    string[] vars = {"hammer", "staff", "talisman", "diamond", "chest of coins", "shield", "dagger"};
+                    rand = gen.Next(vars.Length);
+                    found = vars[rand];
+                }
+            }
+
+            return found;
+        }
+
+        public void GoToNewLocation()
+        {
+            Console.WriteLine("{0} walks into a random direction...", Name);
+            Random rand = new Random();
+            int gen = rand.Next(100);
+            gen += this.Luck;
+            if (gen < 50)
+            {
+                this.Encounter();
+                if (Health <= 0)
+                {
+                    Console.Clear();
+                    Console.WriteLine("You are dead.");
+                    Console.ReadKey();
+                }
+                else
+                {
+                    Console.WriteLine("Victory!");
+                    Console.WriteLine("You get 500 XP");
+                    XP += 500;
+                    if (XP >= LevelCost)
+                    {
+                        Console.WriteLine("Level Up");
+                        LevelUp();
+                        XP -= LevelCost;
+                        Console.ReadKey();
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("{0} is in an empty room. Perhaps he should look for some items.", Name);
+                PickUpItem();
+                Console.ReadKey();
+            }
+
+        }
+
+    }
+
+    class Bandit : Hero
+    {
+        public Bandit()
+        {
+            this.Name = "Bandit";
+            RandomStatGeneration();
+        }
+
+        private void RandomStatGeneration()
+        {
+            Random rand = new Random();
+            int lvl = rand.Next(50);
+            this.Level = lvl;
+            int str = rand.Next(lvl);
+            lvl = lvl - str;
+            int agi = rand.Next(lvl);
+            lvl = lvl - agi;
+            int vit = rand.Next(lvl);
+            lvl = lvl - vit;
+            int sta = rand.Next(lvl);
+            lvl = lvl - sta;
+            int end = rand.Next(lvl);
+            lvl = lvl - end;
+            int intj = rand.Next(lvl);
+            lvl = lvl - intj;
+            int lck = lvl;
+            this.Strength = str;
+            this.Agility = agi;
+            this.Stamina = sta;
+            this.Vitality = vit;
+            this.Intelligence = intj;
+            this.Endurance = end;
+            this.Luck = lck;
+            setHealth();
+            setFortitude();
+            setLevelCost();
+        }
+
+        public void Attack(Hero hero)
+        {
+            Random rnd = new Random();
+            int chance = rnd.Next(100) + Luck;
+            if (chance < 10)
+            {
+                Console.WriteLine("Critical miss!");
+                setHealth((int) (Strength * 1.5 + Agility * 0.5));
+                setFear(20);
+            }
+            else if (hero.Parry_state == true)
+            {
+                Console.WriteLine("{0} parries the attack!", hero.Name);
+                setHealth((int) (hero.Strength * 1.5 + hero.Agility * 0.5 + Agility));
+                hero.Parry_state = false;
+            }
+            else
+            {
+                int atk_bonus = rnd.Next(30);
+                int atk = (int) (Strength * 1.5 + Agility * 0.5) + atk_bonus;
+                int def = hero.Fortitude;
+                if (atk - def < 0)
+                {
+                    atk = 0;
+                }
+                else
+                {
+                    atk -= def;
+                }
+
+                Console.WriteLine("Bandit deals {0} damage!", atk);
+                hero.setHealth(atk);
+            }
+        }
+
+        public override void Defend()
+        {
+            setFortitude(2);
+        }
+
+        public void Flee()
+        {
+            Console.WriteLine("The bandit flees in fear!");
+            setHealth(getHealth());
+        }
+
+        public void BanditInterface(int i, Hero hero)
+        {
+            if (getBleed() != 0)
+            {
+                Console.WriteLine("Bandit №{0} bleeds!", i);
+                setHealth(10);
+                setBleed(getBleed() - 1);
+            }
+
+            if (getPoison() != 0)
+            {
+                Console.WriteLine("Bandit №{0} is poisoned!", i);
+                setHealth(5);
+                setPoison(getPoison()-5);
+            }
+            Random rnd = new Random();
+            int opt = rnd.Next(2);
+            if (getFear() > 60)
+            {
+                Flee();
+            }
+
+            switch (opt)
+            {
+                case 1:
+                {
+                    Console.WriteLine("Bandit {0} attacks!", i);
+                    Attack(hero);
+                    break;
+                }
+                case 0:
+                {
+                    Console.WriteLine("Bandit {0} defends himself!", i);
+                    Defend();
+                    break;
+                }
+            }
+        }
+
+    }
+
+    class Swordsman : Hero
+    {
+        public Swordsman(string name, int str, int agi, int vit, int sta, int inj, int end, int lck) : base(name, str,
+            agi, vit, sta, inj, end, lck)
+        {
+
+        }
+
+        public override void Turn(ref int ActionPoints, Bandit[] bandits, int count)
+        {
+
+            int opt = BattleInterface();
+            Random rnd = new Random();
+            if (ActionPoints > 2)
+            {
+                switch (opt)
+                {
+                    case 1:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} attacks a random bandit!", Name);
+                            int target = rnd.Next(count);
+                            Attack(bandits[target]);
+                            ActionPoints -= 5;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        if (ActionPoints - 3 >= 0)
+                        {
+                            Console.WriteLine("{0} defends himself!", Name);
+                            Defend();
+                            ActionPoints -= 3;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 4:
+                    {
+                        if (ActionPoints - 4 >= 0)
+                        {
+                            Console.WriteLine("{0} will parry the next attack.", Name);
+                            Parry();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 3:
+                    {
+                        Console.WriteLine("{0} will skip this turn.");
+                        ActionPoints = 0;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not enough action points");
+            }
+        }
+
+        public void setParryState(bool parry)
+        {
+            Parry_state = parry;
+        }
+
+        public override int BattleInterface()
+        {
+
+            Console.WriteLine("Options:");
+            Console.WriteLine("1. Attack: {0} attacks random bandit", Name);
+            Console.WriteLine("2. Defend: {0} defends himself this turn", Name);
+            Console.WriteLine("3. Skip: {0} skips the turn", Name);
+            Console.WriteLine("4. Parry: {0} counter attacks", Name);
+            int a = Convert.ToInt32(Console.ReadLine());
+            return a;
+        }
+
+        public override void Defend()
+        {
+            setFortitude(5);
+        }
+
+        public void Parry()
+        {
+            Console.WriteLine("{0} takes an offensive pose...", Name);
+            setParryState(true);
+        }
+    }
+
+    class Jester : Hero
+    {
+        public Jester(string name, int str, int agi, int vit, int sta, int inj, int end, int lck) : base(name, str, agi,
+            vit, sta, inj, end, lck)
+        {
+
+        }
+
+        public override int BattleInterface()
+        {
+            Console.WriteLine("Options:");
+            Console.WriteLine("1. Attack: {0} attacks a random bandit.", Name);
+            Console.WriteLine("2. Defend: {0} defends himself.", Name);
+            Console.WriteLine("3. Skip: {0} skips a current turn.", Name);
+            Console.WriteLine("4. Sing: {0} sings a haunting tune, inflicting fear in his foes.", Name);
+            int a = Convert.ToInt32(Console.ReadLine());
+            return a;
+        }
+
+        public override void Turn(ref int ActionPoints, Bandit[] bandits, int count)
+        {
+
+            int opt = BattleInterface();
+            Random rnd = new Random();
+            if (ActionPoints > 2)
+            {
+                switch (opt)
+                {
+                    case 1:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} attacks a random bandit!", Name);
+                            int target = rnd.Next(count);
+                            Attack(bandits[target]);
+                            ActionPoints -= 5;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        if (ActionPoints - 3 >= 0)
+                        {
+                            Console.WriteLine("{0} defends himself!", Name);
+                            Defend();
+                            ActionPoints -= 3;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 4:
+                    {
+
+                        Console.WriteLine("{0} sings a disturbing song.", Name);
+                        Sing(bandits, count);
+                        ActionPoints = 0;
+                        break;
+                    }
+                    case 3:
+                    {
+                        Console.WriteLine("{0} will skip this turn.");
+                        ActionPoints = 0;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not enough action points");
+            }
+        }
+
+        public void Sing(Bandit[] bandits, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Random rnd = new Random();
+                bandits[i].setFear(rnd.Next(20));
+                Console.WriteLine("Bandit №{0} is trembling in fear! " + bandits[i].getFear(), i);
+            }
+        }
+    }
+
+    class Rogue : Hero
+    {
+        public Rogue(string name, int str, int agi, int vit, int sta, int inj, int end, int lck) : base(name, str, agi,
+            vit, sta, inj, end, lck)
+        {
+
+        }
+
+        public override int BattleInterface()
+        {
+            {
+                Console.WriteLine("Options:");
+                Console.WriteLine("1. Attack: {0} attacks a random bandit.", Name);
+                Console.WriteLine("2. Defend: {0} defends himself.", Name);
+                Console.WriteLine("3. Skip: {0} skips a current turn.", Name);
+                Console.WriteLine(
+                    "4. Slash: {0} pokes his dagger into a perfect spot after some preparations, inflicting bleeding.",
+                    Name);
+                Console.WriteLine("5. Steal: {0} steals items from his enemies.", Name);
+                int a = Convert.ToInt32(Console.ReadLine());
+                return a;
+            }
+        }
+
+        public void Slash(Bandit bandit)
+        {
+            if (Slashy_state == 1)
+            {
+                Console.WriteLine("{0} makes a threatening pose, ready to slash.");
+                Slashy_state++;
+            }
+            else
+            {
+                Console.WriteLine("{0} slashes his opponent.");
+                bandit.setHealth(Vitality * 5 * Slashy_state);
+                bandit.setBleed(Slashy_state);
+                Slashy_state = 1;
+            }
+        }
+
+        public void Steal()
+        {
+            string[] vars = {"dagger", "coins", "diamond", "ruby"};
+            Random rnd = new Random();
+            string stolen = vars[rnd.Next(vars.Length)];
+            Console.WriteLine("{0} has stolen " + stolen, Name);
+        }
+
+        public override void Turn(ref int ActionPoints, Bandit[] bandits, int count)
+        {
+            if (Slashy_state != 1)
+            {
+                Slashy_state++;
+            }
+
+            int opt = BattleInterface();
+            Random rnd = new Random();
+            if (ActionPoints > 2)
+            {
+                switch (opt)
+                {
+                    case 1:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} attacks a random bandit!", Name);
+                            int target = rnd.Next(count);
+                            Attack(bandits[target]);
+                            ActionPoints -= 5;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        if (ActionPoints - 3 >= 0)
+                        {
+                            Console.WriteLine("{0} defends himself!", Name);
+                            Defend();
+                            ActionPoints -= 3;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 4:
+                    {
+                        if (ActionPoints - 4 >= 0)
+                        {
+                            Console.WriteLine("{0} will slash the target after some preparation.", Name);
+                            int target = rnd.Next(count);
+                            Slash(bandits[target]);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 3:
+                    {
+                        Console.WriteLine("{0} will skip this turn.");
+                        ActionPoints = 0;
+                        break;
+                    }
+                    case 5:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} will rob his foes blind.", Name);
+                            ActionPoints -= 5;
+                            Steal();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not enough action points");
+            }
+        }
+    }
+
+    class Apothecary : Hero
+    {
+        public Apothecary(string name, int str, int agi, int vit, int sta, int inj, int end, int lck) : base(name, str, agi,
+            vit, sta, inj, end, lck)
+        {
+
+        }
+
+        public override int BattleInterface()
+        {
+            Console.WriteLine("Options:");
+            Console.WriteLine("1. Attack: {0} attacks random bandit", Name);
+            Console.WriteLine("2. Defend: {0} defends himself this turn", Name);
+            Console.WriteLine("3. Skip: {0} skips the turn", Name);
+            Console.WriteLine("4. Poison: {0} poisons the enemies", Name);
+            int a = Convert.ToInt32(Console.ReadLine());
+            return a;
+        }
+
+        public override void Turn(ref int ActionPoints, Bandit[] bandits, int count)
+        {
+            int opt = BattleInterface();
+            Random rnd = new Random();
+            if (ActionPoints > 2)
+            {
+                switch (opt)
+                {
+                    case 1:
+                    {
+                        if (ActionPoints - 5 >= 0)
+                        {
+                            Console.WriteLine("{0} attacks a random bandit!", Name);
+                            int target = rnd.Next(count);
+                            Attack(bandits[target]);
+                            ActionPoints -= 5;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        if (ActionPoints - 3 >= 0)
+                        {
+                            Console.WriteLine("{0} defends himself!", Name);
+                            Defend();
+                            ActionPoints -= 3;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Not enough Action Points!");
+                        }
+
+                        break;
+                    }
+                    case 4:
+                    {
+
+                        Console.WriteLine("{0} poisons the foe.", Name);
+                        Poison(bandits, count);
+                        ActionPoints = 0;
+                        break;
+                    }
+                    case 3:
+                    {
+                        Console.WriteLine("{0} will skip this turn.");
+                        ActionPoints = 0;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not enough action points");
+            }
+        }
+
+        public void Poison(Bandit[] bandits, int count)
+        {
+            Console.WriteLine("{0} throws a poisonous concoction.");
+            for (int i = 0; i < count; i++)
+            {
+                Random rnd = new Random();
+                int chance = rnd.Next(100) + Intelligence;
+                if (chance > 50)
+                {
+                    bandits[i].setPoison(bandits[i].getPoison() + (int)(Intelligence*2.5));
+                }
+                else
+                {
+                    Console.WriteLine("The bandit avoids the deadly mixture.");
+                }
+            }
+        }
+    }
+
+    namespace Class_Demonstration
+    {
+        class Program
+        {
+            static void Main(string[] args)
+            {
+                Console.WriteLine("Please, choose your character:");
+                Console.WriteLine("1. John, the Lone Swordsman, master of his blade.");
+                Console.WriteLine("2. Richard, the Slick Jester, master of persuasion.");
+                Console.WriteLine("3. Willard, the Royal Apothecary, master of poisons.");
+                Console.WriteLine("4. Francois, the Shadow Thief, master of daggers.");
+                int a = Convert.ToInt32(Console.ReadLine());
+                switch (a)
+                {
+                    case 1:
+                    {
+                        Swordsman sword = new Swordsman("John", 10, 5, 15, 10, 3, 8, 6);
+                        while (true)
+                        {
+                            sword.GoToNewLocation();
+                            sword.PickUpItem();
+                            sword.PickUpItem("stick");
+                        }
+
+                        break;
+                    }
+                    case 2:
+                    {
+                        Jester jest = new Jester("Richard", 5, 5, 5, 5, 10, 5, 20);
+                        while (true)
+                        {
+                            jest.GoToNewLocation();
+                            jest.PickUpItem();
+                            jest.PickUpItem("stick");
+                        }
+
+                        break;
+                    }
+                    case 4:
+                    {
+                        Rogue rogue = new Rogue("Francois", 5, 15, 10, 15, 5, 5, 10);
+                        while (true)
+                        {
+                            rogue.GoToNewLocation();
+                            rogue.PickUpItem();
+                            rogue.PickUpItem("stick");
+                        }
+
+                        break;
+                    }
+                    case 3:
+                    {
+                        Apothecary apothecary = new Apothecary("Willard", 5, 7, 5, 6,15, 10, 10);
+                        while (true)
+                        {
+                            apothecary.GoToNewLocation();
+                            apothecary.PickUpItem();
+                            apothecary.PickUpItem("stick");
+                        }
+
+                        break;
+                    }
+                }
+
+            }
+        }
+    }
+}
